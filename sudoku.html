@@ -1,0 +1,174 @@
+<h1>Sudoku Solver</h1>
+<table></table>
+<br>
+<button onclick="solve()" style="background: #8c8">Solve</button>
+<button onclick="solve()">Edit</button>
+<button onclick="solve()" style="background: #c88">Clear</button>
+<p id="time"></p>
+<style>
+  body {
+      text-align: center;
+      font-family: "Ubuntu Mono";
+      background: #ddd;
+  }
+
+  h1 {
+    font-size: 60px;
+    font-weight: 600;
+    color: #555;
+  }
+
+  table {
+    border-collapse: collapse;
+    margin: 0 auto;
+    box-shadow: 0 0 20px rgba(0,0,0,.25);
+  }
+
+  table, td, th {
+    border: 2px solid;
+    text-align: center;
+  }
+
+  td {
+    font-family: "Ubuntu";
+    width: 50px;
+    height: 50px;
+    padding: 0;
+  }
+
+  td.even {
+    background: #fff;
+  }
+
+  button {
+    border: 2px solid #888;
+    border-radius: 3px;
+    background: #bbb;
+    font-family: "Ubuntu";
+    font-size: 20px;
+    padding: 10px 20px;
+    cursor: pointer;
+    outline: none;
+  }
+
+  button:hover {
+    background: #ccc;
+  }
+</style>
+
+
+<script>
+  // const sudoku = '53  7    6  195    98    6 8   6   34  8 3  17   2   6 6    28    419  5    8  79';
+  // const sudoku = '    9     1 8 3 4 6       2 9  5  3 5 4   7 9  2 4 1    9 8 4   4     6 3  5 4  7';
+  const sudoku = '  4   1   51     339 5 1   1 3  8 6    9 6    8 3  2 4   2 5 917     62   2   3  ';
+
+  const table = document.querySelector("table");
+  for(let i = 0; i < 9; ++i) {
+    const tr = document.createElement("tr");
+    for(let j = 0; j < 9; ++j) {
+      const td = document.createElement("td");
+      td.innerHTML = sudoku[i * 9 + j].bold();
+      if(((i / 3 | 0) * 3 + (j / 3 | 0)) % 2 == 0) td.className = "even";
+      tr.appendChild(td);
+    }
+    table.appendChild(tr);
+  }
+</script>
+
+<script>
+let board = [];
+
+function createBoard(sudoku) {
+  board = sudoku.split("").map((n,i) => ({
+    value: +n,
+    filled: !!+n,
+    row: i % 9,
+    column: i / 9 | 0,
+    block: (i % 9 / 3 | 0) + (i / 27 | 0) * 3
+  }));
+}
+
+function getRow(row) {
+  const result = [];
+  for(let i = 0; i < 81; ++i) {
+    if(board[i].row == row) result.push(board[i]);
+  }
+  return result;
+}
+
+function getColumn(column) {
+  const result = [];
+  for(let i = 0; i < 81; ++i) {
+    if(board[i].column == column) result.push(board[i]);
+  }
+  return result;
+}
+
+function getBlock(block) {
+  const result = [];
+  for(let i = 0; i < 81; ++i) {
+    if(board[i].block == block) result.push(board[i]);
+  }
+  return result;
+}
+
+function fillOptions() {
+  for(let i = 0; i < 81; ++i) {
+    const tile = board[i];
+    if(tile.filled) continue;
+
+    let options = [1,2,3,4,5,6,7,8,9].filter(n => {
+      return !getRow(tile.row).find(tile => tile.value == n) &&
+             !getColumn(tile.column).find(tile => tile.value == n) &&
+             !getBlock(tile.block).find(tile => tile.value == n);
+    });
+
+    tile.options = options;
+  }
+}
+
+function fillTiles() {
+  for(let tile of board) {
+    if(tile.filled) continue;
+
+    if(tile.options.length == 1) {
+      tile.value = tile.options[0];
+      tile.filled = true;
+      continue;
+    }
+
+    for(let option of tile.options) {
+      if(
+        !getRow(tile.row).find(tile => !tile.filled && tile.options.includes(option)) ||
+        !getColumn(tile.column).find(tile => !tile.filled && tile.options.includes(option)) ||
+        !getBlock(tile.block).find(tile => !tile.filled && tile.options.includes(option))
+      ) {
+        tile.value = option;
+        tile.filled = true;
+        continue;
+      }
+    }
+
+  }
+}
+
+function solve() {
+  const start = new Date;
+  createBoard(sudoku);
+
+  let filled = 0;
+  while(filled < (filled = board.filter(tile => tile.filled).length) && filled < 81) {
+    fillOptions();
+    if(fillTiles()) break;
+  }
+  const time = new Date - start;
+  document.getElementById("time").innerHTML = "Sudoku solved in " + time + " ms";
+
+  const td = document.querySelectorAll("td");
+  for(let i = 0; i < td.length; ++i) {
+    if(+td[i].innerText) continue;
+    if(board[i].value > 0) td[i].innerHTML = board[i].value.toString();
+    else td[i].innerHTML = board[i].options.toString().fontsize("1");
+  }
+}
+</script>
